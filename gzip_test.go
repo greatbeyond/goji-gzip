@@ -9,9 +9,7 @@ import (
 
 func TestGzipHandler(t *testing.T) {
 	w := httptest.NewRecorder()
-	handler := GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "hello\n")
-	}))
+	middleware := New([]ExcludeRoute{})
 
 	req := &http.Request{
 		Method: "GET",
@@ -20,7 +18,9 @@ func TestGzipHandler(t *testing.T) {
 		},
 	}
 
-	handler.ServeHTTP(w, req)
+	middleware.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "hello\n")
+	})).ServeHTTP(w, req)
 
 	if w.HeaderMap.Get("Content-Encoding") != "gzip" {
 		t.Errorf("wrong content encoding %s", w.HeaderMap.Get("Content-Encoding"))

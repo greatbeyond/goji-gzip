@@ -24,8 +24,31 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func GzipHandler(h http.Handler) http.Handler {
+// ExcludeRoute contains a route to exclude, supplied to New()
+type ExcludeRoute string
+
+// Middleware is created with New() and contains access to Handler function
+type Middleware struct {
+	excludeRoutes []ExcludeRoute
+}
+
+// New returns an instance of gzip.Middleware
+func New(excludeRoutes []ExcludeRoute) *Middleware {
+	return &Middleware{
+		excludeRoutes: excludeRoutes,
+	}
+}
+
+// Handler gzips responses
+func (c *Middleware) Handler(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		for _, e := range c.excludeRoutes {
+			if strings.Contains(r.URL.Path, string(e)) {
+				h.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			h.ServeHTTP(w, r)
 			return
